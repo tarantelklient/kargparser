@@ -1,0 +1,110 @@
+package argparser
+
+import argparser.exception.NotAllowedValueException
+import argparser.exception.NotDeclaredException
+
+/**
+ * This is a simple argument parser for command line
+ * tools.
+ */
+class Argparser2(var description: String = "", var programName: String = "") {
+
+    private var optionsDefined: ArrayList<Argument> = ArrayList()
+    private var optionsPassed: ArrayList<Argument> = ArrayList()
+
+    /**
+     * Add an option to the parser.
+     *
+     * @param description Description
+     * @param option The name of the option
+     * @param hasValue Should there be a value after the option
+     */
+    fun addArgument(description: String, option: String, defaultValue: String = "",
+                    hasValue: Boolean = true) {
+        val a = Argument(
+                description = description,
+                hasValue = hasValue,
+                option = option.replace("--", ""),
+                value = defaultValue
+        )
+
+        optionsDefined.add(a)
+    }
+
+    /**
+     * Parse the arguments passed to the program.
+     *
+     * @param args Arguments from the command line
+     */
+    fun parse(args: Array<String>): Map<String, String> {
+        var cmd: String
+        // Is there a help option?
+        if (args.contains("--help")) {
+            printHelp()
+            return emptyMap()
+        }
+
+        // Parse each argument
+        args.forEach { arg ->
+            // Is it a option?
+            if (arg.startsWith("--")) {
+                cmd = arg.replace("--", "")
+
+                if (!isValidOption(cmd))
+                    throw NotDeclaredException("The option '$arg' was not declared.")
+
+                optionsPassed.add(Argument())
+                optionsPassed.last().option = cmd
+            } else {
+                if (optionsPassed.last().hasValue)
+                    optionsPassed.last().value += "$arg "
+                else
+                    throw NotAllowedValueException("There mustn't be a value after the option ${optionsPassed.last().option}")
+            }
+        }
+
+        return transformOptions()
+    }
+
+    /**
+     * Check if a passed command is within the declared options.
+     *
+     * TODO -- Add a return documentation
+     * @param cmd The passed command
+     * @return
+     */
+    private fun isValidOption(cmd: String): Boolean {
+        return optionsDefined.any { it.option == cmd }
+    }
+
+    /**
+     * Print all options and values if the command
+     * 'help' was used.
+     */
+    private fun printHelp() {
+        if (programName.isNotEmpty())
+            println("usage: $programName [option_1] [value_1] ...")
+
+        println("Description: $description")
+        println("")
+        println("Arguments: ")
+        for (arg in optionsDefined) {
+            val value = if (arg.hasValue) arg.value else "\t\t"
+            println("--${arg.option}\t\t$value\t\t${arg.description}")
+        }
+    }
+
+    /**
+     * Transform the options list into a map.
+     *
+     * @return option list as map
+     */
+    private fun transformOptions(): Map<String, String> {
+        var result: Map<String, String> = HashMap()
+        optionsPassed.forEach { option ->
+            result += Pair(option.option, option.value.trim())
+        }
+
+        return result
+    }
+}
