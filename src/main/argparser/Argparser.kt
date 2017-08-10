@@ -2,6 +2,7 @@ package argparser
 
 import argparser.exception.NotAllowedValueException
 import argparser.exception.NotDeclaredException
+import argparser.exception.RequiredNotPassedException
 
 /**
  * This is a simple argument parser for command line
@@ -19,11 +20,12 @@ class Argparser(var description: String = "", var programName: String = "") {
      * @param hasValue Should there be a value after the option
      */
     fun addArgument(description: String, option: String, defaultValue: String = "",
-                    hasValue: Boolean = true) {
+                    optional: Boolean = false, hasValue: Boolean = true) {
         val a = Argument(
+                defaultValue = defaultValue,
                 description = description,
                 hasValue = hasValue,
-                value = defaultValue
+                optional = optional
         )
 
         options.put(option.replace("--", ""), a)
@@ -37,10 +39,17 @@ class Argparser(var description: String = "", var programName: String = "") {
     fun parse(args: Array<String>): Map<String, String> {
         var cmd: String
         var lastArg: Argument? = null
+
         // Is there a help option?
         if (args.contains("--help")) {
             printHelp()
             return emptyMap()
+        }
+
+        // Reset options
+        options.forEach { _, a ->
+            a.isSet = false
+            a.value = a.defaultValue
         }
 
         // Parse each argument
@@ -55,12 +64,10 @@ class Argparser(var description: String = "", var programName: String = "") {
                 lastArg = options[cmd]
                 lastArg?.isSet = true
             } else {
-                if (lastArg !== null) {
-                    if (lastArg!!.hasValue)
-                        lastArg!!.value += "$arg "
-                    else
-                        throw NotAllowedValueException("There mustn't be a value after the option ${lastArg!!.value}")
-                }
+                if (lastArg!!.hasValue)
+                    lastArg!!.value += "$arg "
+                else
+                    throw NotAllowedValueException("There mustn't be a value after the option ${lastArg!!.value}")
             }
         }
 
@@ -75,12 +82,28 @@ class Argparser(var description: String = "", var programName: String = "") {
         if (programName.isNotEmpty())
             println("usage:\n\t$programName [option_1] [value_1] ...")
 
+        val opt = options.filterValues { argument -> argument.optional }
+        val req = options.filterValues { argument -> !argument.optional }
+
         println("")
         println("description:\n\t$description")
-        println("")
-        println("arguments: ")
-        options.forEach { k, v ->
-            println("\t--$k\t\t${v.description}")
+
+        if (req.isNotEmpty()) {
+            println("")
+            println("required arguments: ")
+            req.forEach { k, v ->
+                if (!v.optional)
+                    println("\t--$k\t\t${v.description}")
+            }
+        }
+
+        if (opt.isNotEmpty()) {
+            println("")
+            println("optional arguments: ")
+            opt.forEach { k, v ->
+                if (v.optional)
+                    println("\t--$k\t\t${v.description}")
+            }
         }
     }
 
@@ -93,7 +116,9 @@ class Argparser(var description: String = "", var programName: String = "") {
         val result: HashMap<String, String> = HashMap()
 
         options.forEach { k, v ->
-            result.put(k, v.value)
+            if (!v.isSet && !v.optional)
+                throw RequiredNotPassedException("Required argument was not passed.")
+            result.put(k, v.value.trim())
         }
 
         return result
