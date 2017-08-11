@@ -31,6 +31,7 @@ internal class ArgparserTest {
         p.description = "This is a simple test..."
         p.programName = "ArgparserTest"
         p.addArgument("command to execute", "--command", "gulp build")
+        p.addArgument("example optional argument", "--arg", optional = true)
         val args: Array<String> = "--help a --command gulp build".split(" ").toTypedArray()
         val parsed = p.parse(args)
 

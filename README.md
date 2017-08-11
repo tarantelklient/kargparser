@@ -1,9 +1,11 @@
-# kargparser
+# kotlin-argparser
 
 This is a simple argument parser for kotlin.
 
 
 ## Usage
+Here is a small example. There will be a complete documentation in the wiki.
+
 ```kotlin
 val parser: Argparser = Argparser()
 // define the expected arguments
@@ -23,3 +25,6 @@ This Exception will be thrown, if you pass an argument that was not declared in 
 
 #### NotAllowedValueException
 The user passed a value to an argument where it is not allowed.
+
+#### RequiredNotPassedException
+A required argument was not passed to the parser.
