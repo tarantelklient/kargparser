@@ -1,4 +1,4 @@
-# kotlin-argparser
+# kotlin-argparser [![Build Status](https://travis-ci.org/tarantelklient/kotlin-argparser.svg?branch=master)](https://travis-ci.org/tarantelklient/kotlin-argparser)
 
 This is a simple argument parser for kotlin.
 
